@@ -1,0 +1,98 @@
+import java.util.List;
+
+/**
+ * Utility class that checks whether user input is valid before the data
+ * is used anywhere else in the WhaleBase system.
+ * <p>
+ * {@code WhaleValidator} is basically the first line of defense against bad
+ * or messy input. The controller uses these static methods to make sure values
+ * look reasonable (non-empty names, positive numbers, valid status strings, etc.)
+ * before creating or updating any {@link Whale} objects.
+ * </p>
+ *
+ * <p><b>Role in the system:</b></p>
+ * <ul>
+ *     <li>Prevents the app from crashing due to malformed input.</li>
+ *     <li>Keeps validation logic consistent across the console UI and GUI.</li>
+ *     <li>Ensures that {@link AppController} only builds whales from clean data.</li>
+ * </ul>
+ *
+ * <p><b>Usage example:</b></p>
+ * <pre>{@code
+ * if (!WhaleValidator.isValidSpeciesId(userInputId)) {
+ *     System.out.println("Invalid ID. Please try again.");
+ * }
+ * }</pre>
+ */
+public class WhaleValidator {
+
+    /**
+     * Checks if a species ID is valid.
+     * <p>
+     * Currently, this only verifies that the ID is non-null and not empty.
+     * (Formatting rules — like “must be 6 digits”— are enforced on the UI side.)
+     * </p>
+     *
+     * @param id the species ID to check
+     * @return {@code true} if the ID is not null or blank, otherwise {@code false}
+     */
+    public static boolean isValidSpeciesId(String id) {
+        return id != null && !id.trim().isEmpty();
+    }
+
+    /**
+     * Checks whether the scientific name is valid.
+     * <p>
+     * This basic validation just ensures the string isn’t empty.
+     * More detailed checks (letters-only, format, etc.) are handled in UI code.
+     * </p>
+     *
+     * @param name the scientific name to validate
+     * @return {@code true} if the name is non-null and not blank
+     */
+    public static boolean isValidScientificName(String name) {
+        return name != null && !name.trim().isEmpty();
+    }
+
+    /**
+     * Validates that a list—such as common names or habitat regions—
+     * contains at least one item.
+     *
+     * @param list the list to validate
+     * @return {@code true} if the list is not null and not empty
+     */
+    public static boolean isValidList(List<String> list) {
+        return list != null && !list.isEmpty();
+    }
+
+    /**
+     * Checks whether a numeric value (usually length or weight) is positive.
+     *
+     * @param value the number to check
+     * @return {@code true} if the value is greater than zero
+     */
+    public static boolean isValidPositiveDouble(double value) {
+        return value > 0;
+    }
+
+    /**
+     * Validates whether a string can be converted into a valid
+     * {@link ConservationStatus} enum value.
+     * <p>
+     * The method normalizes spacing and case (for example,
+     * "critically endangered" → "CRITICALLY_ENDANGERED") before checking.
+     * </p>
+     *
+     * @param status the text representation of a conservation status
+     * @return {@code true} if the status maps to a valid enum constant,
+     *         {@code false} otherwise
+     */
+    public static boolean isValidConservationStatus(String status) {
+        try {
+            ConservationStatus.valueOf(status.toUpperCase().replace(" ", "_"));
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+}
