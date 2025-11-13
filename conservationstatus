@@ -1,46 +1,49 @@
 /**
- * Represents the conservation status categories used for whale species in the system.
+ * Represents the different conservation status categories a whale species can have.
  * <p>
- * This enum follows common ecological classification terms, giving each whale a clear
- * status that reflects how threatened the species is. These values are used throughout
- * the app—especially in {@code AppController} and {@link Whale}—to sort, categorize,
- * and filter species for conservation-related features.
+ * These labels give us a quick idea of how at-risk a species is, and they're used
+ * across the system anywhere we need to sort or group whales based on how threatened
+ * they are. By using an enum instead of raw text, the app stays consistent and avoids
+ * issues like typos or mismatched phrases.
  * </p>
  *
- * <p><b>How it's used in the system:</b></p>
+ * <p><b>How this fits into the app:</b></p>
  * <ul>
- *     <li>{@link Whale} stores one of these values for each species.</li>
- *     <li>{@code AppController} converts user input (like "Endangered") into the correct enum.</li>
- *     <li>Methods like {@code conservationOverview()} group species by these categories.</li>
+ *     <li>Each {@link Whale} stores one of these values to describe its status.</li>
+ *     <li>{@code AppController} converts whatever the user types (like "endangered") into
+ *         one of these enum constants so everything stays uniform.</li>
+ *     <li>The conservation overview feature groups whales by these categories.</li>
  * </ul>
  *
- * <p>This enum allows the system to enforce a consistent set of allowed conservation
- * labels instead of relying on free-typed text from the user.</p>
- *
- * <p><b>Example:</b></p>
+ * <p><b>Quick example:</b></p>
  * <pre>{@code
- * Whale blueWhale = new Whale(
- *     "BALAENOPTERA_MUSCULUS",
- *     "Balaenoptera musculus",
- *     List.of("Blue Whale"),
- *     30.0,
- *     150000.0,
- *     ConservationStatus.ENDANGERED,
- *     List.of("Open Ocean")
+ * Whale grayWhale = new Whale(
+ *     "ESCHRICHTIUS_ROBUSTUS",
+ *     "Eschrichtius robustus",
+ *     List.of("Gray Whale"),
+ *     14.0,
+ *     30000.0,
+ *     ConservationStatus.VULNERABLE,
+ *     List.of("Coastal Waters")
  * );
  * }</pre>
+ *
+ * <p>
+ * Overall, this enum keeps everything organized and makes it easy to compare species
+ * or run simple stats based on their conservation level.
+ * </p>
  */
 public enum ConservationStatus {
 
-    /** Species is abundant and faces minimal threat. */
+    /** Species is doing fine overall and isn’t considered at risk. */
     LEAST_CONCERN,
 
-    /** Species is starting to show signs of decline and may become threatened. */
+    /** Species is starting to decline and could become threatened if trends continue. */
     VULNERABLE,
 
-    /** Species faces a high risk of extinction in the near future. */
+    /** Species faces a serious risk of extinction if conditions don’t improve. */
     ENDANGERED,
 
-    /** Species faces an extremely high and immediate risk of extinction. */
+    /** Species is extremely close to extinction and needs urgent protection. */
     CRITICALLY_ENDANGERED
 }
