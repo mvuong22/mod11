@@ -1,0 +1,46 @@
+/**
+ * Represents the conservation status categories used for whale species in the system.
+ * <p>
+ * This enum follows common ecological classification terms, giving each whale a clear
+ * status that reflects how threatened the species is. These values are used throughout
+ * the app—especially in {@code AppController} and {@link Whale}—to sort, categorize,
+ * and filter species for conservation-related features.
+ * </p>
+ *
+ * <p><b>How it's used in the system:</b></p>
+ * <ul>
+ *     <li>{@link Whale} stores one of these values for each species.</li>
+ *     <li>{@code AppController} converts user input (like "Endangered") into the correct enum.</li>
+ *     <li>Methods like {@code conservationOverview()} group species by these categories.</li>
+ * </ul>
+ *
+ * <p>This enum allows the system to enforce a consistent set of allowed conservation
+ * labels instead of relying on free-typed text from the user.</p>
+ *
+ * <p><b>Example:</b></p>
+ * <pre>{@code
+ * Whale blueWhale = new Whale(
+ *     "BALAENOPTERA_MUSCULUS",
+ *     "Balaenoptera musculus",
+ *     List.of("Blue Whale"),
+ *     30.0,
+ *     150000.0,
+ *     ConservationStatus.ENDANGERED,
+ *     List.of("Open Ocean")
+ * );
+ * }</pre>
+ */
+public enum ConservationStatus {
+
+    /** Species is abundant and faces minimal threat. */
+    LEAST_CONCERN,
+
+    /** Species is starting to show signs of decline and may become threatened. */
+    VULNERABLE,
+
+    /** Species faces a high risk of extinction in the near future. */
+    ENDANGERED,
+
+    /** Species faces an extremely high and immediate risk of extinction. */
+    CRITICALLY_ENDANGERED
+}
