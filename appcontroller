@@ -2,48 +2,47 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Main coordinator for the whale tracking app.
+ * Main controller for the whale-tracking app.
  * <p>
- * {@code AppController} sits between the user-facing menu (like {@code MenuUI})
- * and the data layer ({@link WhaleRepository}). It handles all the main actions
- * the user can take: adding, updating, removing, and viewing whales, plus some
- * simple conservation stats.
+ * The {@code AppController} basically acts as the “middle person” between the
+ * user interface (like {@code MenuUI}) and the data layer ({@link WhaleRepository}).
+ * Any time the user wants to add, remove, update, or look at whales, the UI calls
+ * this controller, which then handles the logic and talks to the repository.
  * </p>
  *
- * <p><b>Responsibilities:</b></p>
+ * <p><b>What this controller is responsible for:</b></p>
  * <ul>
- *     <li>Validate user input using {@link WhaleValidator} before it ever hits the repository.</li>
- *     <li>Convert raw input (like a {@code String} status) into the correct model types
- *         (like {@link ConservationStatus}).</li>
- *     <li>Call the right methods on {@link WhaleRepository} to store and retrieve {@link Whale} objects.</li>
- *     <li>Provide higher-level actions such as a conservation overview for all whales.</li>
+ *     <li>Checking user input with {@link WhaleValidator} before storing anything.</li>
+ *     <li>Turning raw text (like a status typed by the user) into real model types
+ *         such as {@link ConservationStatus}.</li>
+ *     <li>Passing whale objects into {@link WhaleRepository} to save or update them.</li>
+ *     <li>Providing extra features like a simple conservation overview.</li>
  * </ul>
  *
- * <p><b>Key collaborators:</b></p>
+ * <p><b>How it works with other classes:</b></p>
  * <ul>
- *     <li>{@link WhaleRepository} – where all whales are actually stored.</li>
- *     <li>{@link Whale} – the main domain object this controller creates and manages.</li>
- *     <li>{@link WhaleValidator} – used to check that user input is reasonable before saving.</li>
- *     <li>{@link ConservationStatus} – enum used to represent the whale's conservation status.</li>
- *     <li>{@code MenuUI} (not shown here) – calls into this controller based on what the user selects.</li>
+ *     <li>{@link WhaleRepository} — stores all whale data.</li>
+ *     <li>{@link Whale} — the actual whale objects being created and updated.</li>
+ *     <li>{@link WhaleValidator} — makes sure inputs are valid before saving.</li>
+ *     <li>{@link ConservationStatus} — used when converting the whale’s status.</li>
+ *     <li>{@code MenuUI} — calls the controller based on what the user picks.</li>
  * </ul>
  *
- * <p><b>Typical usage:</b></p>
+ * <p><b>Quick example of how a UI might use this:</b></p>
  * <pre>{@code
  * AppController controller = new AppController();
  *
- * // Example: adding a whale from user input collected in the UI layer
  * List<String> commonNames = List.of("Blue whale", "Great blue whale");
  * List<String> habitats = List.of("Open ocean", "Deep sea");
  *
  * boolean added = controller.addWhale(
- *         "BALAENOPTERA_MUSCULUS",
- *         "Balaenoptera musculus",
- *         commonNames,
- *         30.0,
- *         150000.0,
- *         "Endangered",
- *         habitats
+ *     "BALAENOPTERA_MUSCULUS",
+ *     "Balaenoptera musculus",
+ *     commonNames,
+ *     30.0,
+ *     150000.0,
+ *     "Endangered",
+ *     habitats
  * );
  *
  * if (added) {
@@ -58,11 +57,10 @@ public class AppController {
     private WhaleRepository repository;
 
     /**
-     * Creates a new {@code AppController} with its own {@link WhaleRepository}.
+     * Builds a new {@code AppController} with its own {@link WhaleRepository}.
      * <p>
-     * This is the default setup for most runs of the program: the controller
-     * owns a single repository instance for the entire session and all UI
-     * actions go through this same controller.
+     * This is the normal setup — one controller and one repository running
+     * throughout the whole program session.
      * </p>
      */
     public AppController() {
@@ -70,110 +68,97 @@ public class AppController {
     }
 
     /**
-     * Attempts to add a new {@link Whale} to the system based on raw input values.
+     * Tries to add a new {@link Whale} into the system using the details the user provided.
      * <p>
-     * This method first validates the data using {@link WhaleValidator}. If anything
-     * looks off (invalid ID, bad numbers, empty lists, etc.), it returns {@code false}
-     * and the whale is not added. If everything checks out, it converts the status
-     * {@link String} into a {@link ConservationStatus}, builds a {@link Whale}, and
-     * passes it to {@link WhaleRepository#addWhale(Whale)}.
+     * The method first checks every input using {@link WhaleValidator}. If anything looks
+     * wrong (bad ID, empty lists, negative numbers), the method returns {@code false}.
+     * Otherwise, it converts the status string into a {@link ConservationStatus}, creates
+     * a new {@link Whale}, and sends it to the repository to be saved.
      * </p>
      *
-     * @param id             unique ID for the whale (must match the expected species ID format)
-     * @param scientificName the whale's scientific name (e.g., {@code "Balaenoptera musculus"})
-     * @param commonNames    list of common names people might use for this whale
-     * @param length         length of the whale (usually in meters); must be a positive value
-     * @param weight         weight of the whale (usually in kilograms); must be a positive value
-     * @param status         textual description of the conservation status
-     *                       (e.g., {@code "Endangered"}, {@code "Least Concern"});
-     *                       will be converted into {@link ConservationStatus}
-     * @param habitats       list of habitats where this whale can be found
-     * @return {@code true} if the whale passed validation and was successfully added
-     *         to the repository, {@code false} if validation fails or the repository
-     *         rejects the whale (for example, due to a duplicate ID)
-     * @throws IllegalArgumentException if {@code status} cannot be mapped to a valid
-     *                                  {@link ConservationStatus} enum constant
+     * @param id             unique species ID for the whale
+     * @param scientificName the scientific name (ex: "Balaenoptera musculus")
+     * @param commonNames    list of common names this whale is known by
+     * @param length         whale length in meters; must be positive
+     * @param weight         whale weight in kg; must be positive
+     * @param status         text status like "Endangered" or "Least Concern"
+     * @param habitats       list of habitats where the whale is found
+     * @return {@code true} if the whale passed validation and was saved,
+     *         {@code false} if validation failed or the repository rejected it
+     * @throws IllegalArgumentException if {@code status} cannot be converted
+     *                                  to a valid {@link ConservationStatus}
      */
     public boolean addWhale(String id, String scientificName, List<String> commonNames,
                             double length, double weight, String status, List<String> habitats) {
+
         if (!WhaleValidator.isValidSpeciesId(id) ||
-                !WhaleValidator.isValidScientificName(scientificName) ||
-                !WhaleValidator.isValidList(commonNames) ||
-                !WhaleValidator.isValidPositiveDouble(length) ||
-                !WhaleValidator.isValidPositiveDouble(weight) ||
-                !WhaleValidator.isValidConservationStatus(status) ||
-                !WhaleValidator.isValidList(habitats)) {
+            !WhaleValidator.isValidScientificName(scientificName) ||
+            !WhaleValidator.isValidList(commonNames) ||
+            !WhaleValidator.isValidPositiveDouble(length) ||
+            !WhaleValidator.isValidPositiveDouble(weight) ||
+            !WhaleValidator.isValidConservationStatus(status) ||
+            !WhaleValidator.isValidList(habitats)) {
             return false;
         }
 
-        // Convert string status to enum
         ConservationStatus cs = ConservationStatus.valueOf(status.toUpperCase().replace(" ", "_"));
         Whale whale = new Whale(id, scientificName, commonNames, length, weight, cs, habitats);
         return repository.addWhale(whale);
     }
 
     /**
-     * Removes a whale with the given ID from the system.
+     * Removes a whale from the system using its ID.
      * <p>
-     * If there are no whales at all, this immediately returns {@code false}.
-     * Otherwise, it delegates to {@link WhaleRepository#removeWhale(String)} and
-     * returns whatever the repository returns.
+     * If the repository is empty, removal isn’t possible. Otherwise, the method
+     * tries to remove the whale and returns whatever the repository returns.
      * </p>
      *
-     * @param id the ID of the whale you want to remove
-     * @return {@code true} if the whale was found and removed, {@code false} if
-     *         the repository is empty or no whale exists with that ID
+     * @param id the ID of the whale to remove
+     * @return {@code true} if the whale was removed,
+     *         {@code false} if the list is empty or no whale has that ID
      */
     public boolean removeWhale(String id) {
-        if (repository.getAllWhales().isEmpty()) return false; // nothing to remove
+        if (repository.getAllWhales().isEmpty()) return false;
         return repository.removeWhale(id);
     }
 
     /**
-     * Updates an existing whale identified by its ID with new details.
+     * Updates an existing whale’s details using its ID.
      * <p>
-     * This method first checks that there are whales in the system and that a
-     * whale with the given ID actually exists. If not, it returns {@code false}.
-     * If the whale is found, it converts the status text to a {@link ConservationStatus},
-     * builds a new {@link Whale} instance with the updated values, and passes it
-     * to {@link WhaleRepository#updateWhale(String, Whale)}.
+     * First it checks whether the whale list is empty or the ID doesn’t exist.
+     * If the whale exists, its status string is converted to a {@link ConservationStatus}
+     * and a new updated {@link Whale} is created and saved.
      * </p>
      *
-     * <p><b>Note:</b> Unlike {@link #addWhale(String, String, List, double, double, String, List)},
-     * this method assumes the inputs are already valid and does not repeat the full
-     * validation step. You can add extra validation here if you want tighter checks.</p>
-     *
-     * @param id             the ID of the whale you want to update
-     * @param scientificName updated scientific name
-     * @param commonNames    updated list of common names
-     * @param length         updated length (must be positive for a sensible value)
-     * @param weight         updated weight (must be positive for a sensible value)
-     * @param status         updated conservation status as text; converted to
-     *                       {@link ConservationStatus}
-     * @param habitats       updated list of habitats
-     * @return {@code true} if the whale with that ID exists and the update succeeded,
-     *         {@code false} if there are no whales yet or the ID is not found
-     * @throws IllegalArgumentException if {@code status} cannot be mapped to a valid
-     *                                  {@link ConservationStatus} enum constant
+     * @param id             ID of the whale to update
+     * @param scientificName new scientific name
+     * @param commonNames    new common names
+     * @param length         updated length (must be positive)
+     * @param weight         updated weight (must be positive)
+     * @param status         updated status, converted to {@link ConservationStatus}
+     * @param habitats       updated habitats list
+     * @return {@code true} if the ID existed and the update went through,
+     *         {@code false} otherwise
+     * @throws IllegalArgumentException if {@code status} can't be converted
      */
     public boolean updateWhale(String id, String scientificName, List<String> commonNames,
                                double length, double weight, String status, List<String> habitats) {
-        if (repository.getAllWhales().isEmpty()) return false; // nothing to update
-        Whale existing = repository.getWhaleById(id);
-        if (existing == null) return false; // ID not found
 
-        // Convert string status to enum
+        if (repository.getAllWhales().isEmpty()) return false;
+
+        Whale existing = repository.getWhaleById(id);
+        if (existing == null) return false;
+
         ConservationStatus cs = ConservationStatus.valueOf(status.toUpperCase().replace(" ", "_"));
         Whale updated = new Whale(id, scientificName, commonNames, length, weight, cs, habitats);
         return repository.updateWhale(id, updated);
     }
 
     /**
-     * Prints information about all whales currently stored in the repository.
+     * Prints out information about every whale in the system.
      * <p>
-     * If there are no whales, it shows a friendly message encouraging the user
-     * to add some. If whales do exist, it loops through them and calls
-     * {@link Whale#display()} on each one.
+     * If there are no whales yet, it prints a friendly message. Otherwise it loops
+     * through every whale and calls {@link Whale#display()}.
      * </p>
      */
     public void displayAll() {
@@ -186,62 +171,55 @@ public class AppController {
     }
 
     /**
-     * Prints a simple conservation overview for all whales in the system.
+     * Shows a conservation breakdown of all whales in the system.
      * <p>
-     * For each {@link ConservationStatus} value, this method gathers all the
-     * species currently stored with that status and prints how many there are
-     * along with their scientific names. If there are no whales at all, it
-     * prints a message letting the user know they need to add some first.
+     * This groups whales by their {@link ConservationStatus} and prints how many
+     * species fall into each category. If the list is empty, it reminds the user
+     * to add some whales first.
      * </p>
-     *
-     * <p>The output is meant to give a quick snapshot of how the whales in
-     * the log are spread across different conservation categories.</p>
      */
     public void conservationOverview() {
         List<Whale> whales = repository.getAllWhales();
+
         if (whales.isEmpty()) {
             System.out.println("\nHold your flippers Explorer! There's no whales yet, add some whales first.");
             return;
         }
 
         System.out.println("\n<====== Conservation Overview ======>\n");
+
         for (ConservationStatus cs : ConservationStatus.values()) {
             List<String> species = new ArrayList<>();
+
             for (Whale w : whales) {
-                if (w.getConservationStatus() == cs) species.add(w.getScientificName());
+                if (w.getConservationStatus() == cs) {
+                    species.add(w.getScientificName());
+                }
             }
+
             System.out.println(cs + " (" + species.size() + "): " + String.join(", ", species));
         }
+
         System.out.println("\nSorted & saved!");
     }
 
     /**
-     * Returns a live view of all whales stored in the {@link WhaleRepository}.
+     * Returns every whale stored in the repository.
      * <p>
-     * This is mostly used by the UI layer (like {@code MenuUI}) when it needs to
-     * show lists or perform custom searches. Depending on how {@link WhaleRepository}
-     * is implemented, modifying the returned list directly may or may not affect
-     * the underlying data. In most cases, you should treat this as read-only.
+     * The UI mainly uses this when it needs to show lists or search through whales.
      * </p>
      *
-     * @return a {@link List} of all {@link Whale} objects currently stored;
-     *         never {@code null}, but may be empty if no whales have been added
+     * @return list of all whales (may be empty, but never {@code null})
      */
     public List<Whale> getAllWhales() {
         return repository.getAllWhales();
     }
 
     /**
-     * Looks up a single whale by its ID.
-     * <p>
-     * This is a convenience method for the UI or other layers that need to grab
-     * one specific whale and then show or modify it. If no whale exists with the
-     * given ID, it simply returns {@code null}.
-     * </p>
+     * Finds one whale in the system using its ID.
      *
-     * @param id the ID of the whale to look for
-     * @return the matching {@link Whale} if one exists, or {@code null} if there
-     *         is no whale with that ID
+     * @param id ID of the whale to look up
+     * @return the matching {@link Whale}, or {@code null} if it doesn't exist
      */
     public Whale getWhaleById(String id) {
         return repository.getWhaleById(id);
