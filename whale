@@ -1,0 +1,215 @@
+import java.util.List;
+
+/**
+ * Represents a single whale record in the Whale Base app.
+ * <p>
+ * A {@code Whale} object holds all the core information about one species:
+ * its ID, scientific name, common names, average size, conservation status,
+ * and where it typically lives. This is the main data model that
+ * {@link AppController}, {@link WhaleRepository}, and the UI classes work with.
+ * </p>
+ *
+ * <p><b>How this fits into the system:</b></p>
+ * <ul>
+ *     <li>{@link AppController} creates and updates {@code Whale} objects based on user input.</li>
+ *     <li>{@link WhaleRepository} stores and retrieves {@code Whale} instances.</li>
+ *     <li>UI layers (console or GUI) use the getters and {@link #display()} to show whale info.</li>
+ * </ul>
+ *
+ * <p><b>Example:</b></p>
+ * <pre>{@code
+ * Whale blueWhale = new Whale(
+ *     "000001",
+ *     "Balaenoptera musculus",
+ *     List.of("Blue Whale", "Great Blue Whale"),
+ *     30.0,
+ *     150.0,
+ *     ConservationStatus.ENDANGERED,
+ *     List.of("Open Ocean", "Deep Sea")
+ * );
+ *
+ * blueWhale.display();
+ * }</pre>
+ */
+public class Whale {
+
+    private String speciesId;               // Unique ID
+    private String scientificName;          // Scientific name
+    private List<String> commonNames;       // List of common names
+    private double avgLengthMeters;         // Average length
+    private double avgWeightTons;           // Average weight
+    private ConservationStatus conservationStatus; // Conservation status
+    private List<String> habitatRegions;    // List of habitat regions
+
+    /**
+     * Builds a new {@code Whale} with all of its main details.
+     * <p>
+     * This constructor is usually called from the controller when the user
+     * adds a new whale or when data is loaded from a file or repository.
+     * All fields are expected to already be validated before this is called.
+     * </p>
+     *
+     * @param speciesId          unique ID for the whale species (for example, a 6-digit code)
+     * @param scientificName     scientific name of the whale (e.g., {@code "Balaenoptera musculus"})
+     * @param commonNames        list of human-friendly names for this whale
+     * @param avgLengthMeters    average length in meters
+     * @param avgWeightTons      average weight in tons
+     * @param conservationStatus conservation status enum value for this species
+     * @param habitatRegions     list of regions or environments where this whale is usually found
+     */
+    public Whale(String speciesId, String scientificName, List<String> commonNames,
+                 double avgLengthMeters, double avgWeightTons,
+                 ConservationStatus conservationStatus, List<String> habitatRegions) {
+        this.speciesId = speciesId;
+        this.scientificName = scientificName;
+        this.commonNames = commonNames;
+        this.avgLengthMeters = avgLengthMeters;
+        this.avgWeightTons = avgWeightTons;
+        this.conservationStatus = conservationStatus;
+        this.habitatRegions = habitatRegions;
+    }
+
+    /**
+     * Gets this whale's unique species ID.
+     *
+     * @return the species ID string
+     */
+    public String getSpeciesId() {
+        return speciesId;
+    }
+
+    /**
+     * Updates this whale's species ID.
+     *
+     * @param speciesId new ID to assign to this whale
+     */
+    public void setSpeciesId(String speciesId) {
+        this.speciesId = speciesId;
+    }
+
+    /**
+     * Gets the scientific name for this whale.
+     *
+     * @return the scientific name
+     */
+    public String getScientificName() {
+        return scientificName;
+    }
+
+    /**
+     * Updates the scientific name for this whale.
+     *
+     * @param scientificName the new scientific name to set
+     */
+    public void setScientificName(String scientificName) {
+        this.scientificName = scientificName;
+    }
+
+    /**
+     * Gets the list of common names for this whale.
+     *
+     * @return list of common names (may be empty, but not {@code null} if set properly)
+     */
+    public List<String> getCommonNames() {
+        return commonNames;
+    }
+
+    /**
+     * Updates the list of common names for this whale.
+     *
+     * @param commonNames new list of common names to use
+     */
+    public void setCommonNames(List<String> commonNames) {
+        this.commonNames = commonNames;
+    }
+
+    /**
+     * Gets the average length of this whale in meters.
+     *
+     * @return average length in meters
+     */
+    public double getAvgLengthMeters() {
+        return avgLengthMeters;
+    }
+
+    /**
+     * Updates the average length of this whale.
+     *
+     * @param avgLengthMeters new average length in meters
+     */
+    public void setAvgLengthMeters(double avgLengthMeters) {
+        this.avgLengthMeters = avgLengthMeters;
+    }
+
+    /**
+     * Gets the average weight of this whale in tons.
+     *
+     * @return average weight in tons
+     */
+    public double getAvgWeightTons() {
+        return avgWeightTons;
+    }
+
+    /**
+     * Updates the average weight of this whale.
+     *
+     * @param avgWeightTons new average weight in tons
+     */
+    public void setAvgWeightTons(double avgWeightTons) {
+        this.avgWeightTons = avgWeightTons;
+    }
+
+    /**
+     * Gets the conservation status for this whale.
+     *
+     * @return the current {@link ConservationStatus}
+     */
+    public ConservationStatus getConservationStatus() {
+        return conservationStatus;
+    }
+
+    /**
+     * Updates this whale's conservation status.
+     *
+     * @param conservationStatus new {@link ConservationStatus} value to set
+     */
+    public void setConservationStatus(ConservationStatus conservationStatus) {
+        this.conservationStatus = conservationStatus;
+    }
+
+    /**
+     * Gets the list of habitat regions where this whale is usually found.
+     *
+     * @return list of habitat region names
+     */
+    public List<String> getHabitatRegions() {
+        return habitatRegions;
+    }
+
+    /**
+     * Updates the list of habitat regions for this whale.
+     *
+     * @param habitatRegions new list of habitat regions
+     */
+    public void setHabitatRegions(List<String> habitatRegions) {
+        this.habitatRegions = habitatRegions;
+    }
+
+    /**
+     * Prints a simple, formatted view of this whale's information to the console.
+     * <p>
+     * This is mostly used by UI layers like {@link MenuUI} or other parts of the
+     * app when you just want to quickly show all the details for a whale.
+     * </p>
+     */
+    public void display() {
+        System.out.println("\nID: " + speciesId);
+        System.out.println("Scientific Name: " + scientificName);
+        System.out.println("Common Names: " + String.join(", ", commonNames));
+        System.out.println("Average Length (m): " + avgLengthMeters);
+        System.out.println("Average Weight (tons): " + avgWeightTons);
+        System.out.println("Conservation Status: " + conservationStatus);
+        System.out.println("Habitat Regions: " + String.join(", ", habitatRegions));
+        System.out.println("-------------------------------");
+    }
+}
