@@ -1,0 +1,384 @@
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.io.File;
+import java.util.List;
+import java.util.Scanner;
+
+/**
+ * Swing-based GUI for the WhaleBase app.
+ * <p>
+ * {@code WhaleBaseGUI} is the graphical front-end for the whale tracking system.
+ * It lets the user add, update, remove, and view whales using forms, buttons,
+ * and a table instead of typing everything in the console.
+ * </p>
+ *
+ * <p><b>Role in the overall system:</b></p>
+ * <ul>
+ *     <li>Acts as a visual layer on top of {@link AppController}.</li>
+ *     <li>Displays whale data inside a {@link JTable} using a {@link DefaultTableModel}.</li>
+ *     <li>Provides dialogs for adding, editing, and removing whale records.</li>
+ *     <li>Loads whales from a file and shows a quick conservation overview popup.</li>
+ * </ul>
+ *
+ * <p><b>Key collaborators:</b></p>
+ * <ul>
+ *     <li>{@link AppController} – handles all business logic and repository calls.</li>
+ *     <li>{@link Whale} – the data model shown in the table and dialogs.</li>
+ *     <li>{@link ConservationStatus} – used when building the overview and setting statuses.</li>
+ * </ul>
+ *
+ * <p><b>Quick usage:</b></p>
+ * <pre>{@code
+ * public static void main(String[] args) {
+ *     SwingUtilities.invokeLater(() -> new WhaleBaseGUI().setVisible(true));
+ * }
+ * }</pre>
+ */
+public class WhaleBaseGUI extends JFrame {
+
+    private AppController controller = new AppController();
+    private DefaultTableModel tableModel = new DefaultTableModel();
+    private JTable table = new JTable(tableModel);
+
+    // WhaleBase's theme color palette (ocean-inspired blues).
+    private final Color COLOR_BG = new Color(8,32,56);       // #082038
+    private final Color COLOR_PANEL = new Color(40,56,80);   // #283850
+    private final Color COLOR_MENU = new Color(72,88,112);   // #485870
+    private final Color COLOR_TITLE = new Color(128,136,144);// #808890
+    private final Color COLOR_TEXT = new Color(176,176,184); // #b0b0b8
+
+    private final Font TYPEWRITER = new Font("Monospaced", Font.PLAIN, 15);
+
+    /**
+     * Builds and lays out the WhaleBase GUI window.
+     * <p>
+     * The constructor sets up:
+     * </p>
+     * <ul>
+     *     <li>The main frame (title, size, close operation, background).</li>
+     *     <li>A menu panel on the left with buttons for all core actions.</li>
+     *     <li>A {@link JTable} in the center that shows all stored whales.</li>
+     *     <li>Action listeners hooked up to the buttons to call controller methods.</li>
+     * </ul>
+     *
+     * <p>
+     * After construction, calling {@link #setVisible(boolean) setVisible(true)}
+     * will show the window and load the initial table data via {@link #refreshTable()}.
+     * </p>
+     */
+    public WhaleBaseGUI() {
+        setTitle("WhaleBase");
+        setSize(1000, 700);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout());
+        getContentPane().setBackground(COLOR_BG);
+
+        // Top label/title
+        JLabel title = new JLabel("WhaleBase Explorer", SwingConstants.CENTER);
+        title.setFont(new Font("Monospaced", Font.BOLD, 28));
+        title.setForeground(COLOR_TITLE);
+        add(title, BorderLayout.NORTH);
+
+        // Left menu — all main operations
+        JPanel menu = new JPanel(new GridLayout(6,1,5,5));
+        menu.setBackground(COLOR_PANEL);
+
+        JButton addBtn = createMenuButton("Add Whale");
+        JButton uploadBtn = createMenuButton("Upload File");
+        JButton updateBtn = createMenuButton("Update Whale");
+        JButton removeBtn = createMenuButton("Remove Whale");
+        JButton displayBtn = createMenuButton("Display All");
+        JButton overviewBtn = createMenuButton("Conservation Overview");
+
+        menu.add(addBtn); menu.add(uploadBtn); menu.add(updateBtn);
+        menu.add(removeBtn); menu.add(displayBtn); menu.add(overviewBtn);
+        add(menu, BorderLayout.WEST);
+
+        // Table setup
+        table.setFont(TYPEWRITER);
+        table.setBackground(COLOR_MENU);
+        table.setForeground(COLOR_TEXT);
+        table.setRowHeight(24);
+
+        tableModel.setColumnIdentifiers(new Object[]{
+                "ID","Scientific Name","Common Names","Length","Weight","Status","Habitats"
+        });
+        add(new JScrollPane(table), BorderLayout.CENTER);
+
+        // Button actions
+        addBtn.addActionListener(e -> addWhaleDialog());
+        uploadBtn.addActionListener(e -> uploadFile());
+        updateBtn.addActionListener(e -> updateWhaleDialog());
+        removeBtn.addActionListener(e -> removeWhaleDialog());
+        displayBtn.addActionListener(e -> refreshTable());
+        overviewBtn.addActionListener(e -> showOverview());
+
+        refreshTable();
+    }
+
+    /**
+     * Creates a menu-style {@link JButton} with the shared WhaleBase look.
+     *
+     * @param text the label shown on the button
+     * @return a styled {@link JButton} ready to be added to the menu panel
+     */
+    private JButton createMenuButton(String text) {
+        JButton btn = new JButton(text);
+        btn.setFont(TYPEWRITER);
+        btn.setBackground(COLOR_MENU);
+        btn.setForeground(COLOR_TEXT);
+        return btn;
+    }
+
+    /**
+     * Opens a dialog for adding a new whale.
+     * <p>
+     * The dialog collects all the necessary fields (ID, scientific name,
+     * common names, length, weight, conservation status, and habitats),
+     * runs some basic validation, and then calls
+     * {@link AppController#addWhale(String, String, List, double, double, String, List)}.
+     * If the add succeeds, the table is refreshed.
+     * </p>
+     */
+    private void addWhaleDialog() {
+        JTextField id = new JTextField();
+        JTextField sci = new JTextField();
+        JTextField common = new JTextField();
+        JTextField len = new JTextField();
+        JTextField wt = new JTextField();
+        JComboBox<String> status = new JComboBox<>(new String[]{
+                "Least Concern", "Vulnerable", "Endangered", "Critically Endangered"
+        });
+        JTextField habs = new JTextField();
+
+        Object[] message = {
+                "ID (6 digits):", id,
+                "Scientific Name:", sci,
+                "Common Names (comma-separated):", common,
+                "Length in meters (positive number):", len,
+                "Weight in tons (positive number):", wt,
+                "Conservation Status:", status,
+                "Habitats (comma-separated):", habs
+        };
+
+        int option = JOptionPane.showConfirmDialog(this, message, "Add Whale", JOptionPane.OK_CANCEL_OPTION);
+        if(option != JOptionPane.OK_OPTION) return;
+
+        try {
+            // Validation
+            if(!id.getText().trim().matches("\\d{6}"))
+                throw new Exception("Invalid ID! Must be exactly 6 digits.");
+            if(!sci.getText().trim().matches("[a-zA-Z ]+"))
+                throw new Exception("Invalid Scientific Name! Letters and spaces only.");
+            String[] commons = common.getText().trim().split(",");
+            for(String n : commons) if(!n.trim().matches("[a-zA-Z ]+"))
+                throw new Exception("Invalid Common Names! Letters and commas only.");
+            double length = Double.parseDouble(len.getText().trim());
+            if(length <= 0) throw new Exception("Length must be positive!");
+            double weight = Double.parseDouble(wt.getText().trim());
+            if(weight <= 0) throw new Exception("Weight must be positive!");
+            if(habs.getText().trim().isEmpty()) throw new Exception("Habitats cannot be empty!");
+
+            boolean success = controller.addWhale(
+                    id.getText().trim(),
+                    sci.getText().trim(),
+                    List.of(commons),
+                    length,
+                    weight,
+                    status.getSelectedItem().toString(),
+                    List.of(habs.getText().trim().split(","))
+            );
+
+            if(success) refreshTable();
+            else throw new Exception("Seems like your whale couldn't be added. Check your inputs!");
+
+        } catch(Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Lets the user upload whales from a file using a file chooser.
+     * <p>
+     * Each non-empty line in the selected file is expected to match the same format
+     * used in the console-based upload:
+     * </p>
+     *
+     * <pre>
+     * id,sciName,common1|common2,length,weight,status,habitat1|habitat2
+     * </pre>
+     *
+     * <p>
+     * Valid lines are passed to {@link AppController#addWhale(String, String, List, double, double, String, List)},
+     * and when the upload finishes, the table is refreshed.
+     * </p>
+     */
+    private void uploadFile() {
+        JFileChooser chooser = new JFileChooser();
+        int res = chooser.showOpenDialog(this);
+        if(res == JFileChooser.APPROVE_OPTION) {
+            File file = chooser.getSelectedFile();
+            try(Scanner sc = new Scanner(file)) {
+                while(sc.hasNextLine()) {
+                    String[] parts = sc.nextLine().split(",");
+                    controller.addWhale(
+                            parts[0].trim(), parts[1].trim(),
+                            List.of(parts[2].trim().split("\\|")),
+                            Double.parseDouble(parts[3].trim()),
+                            Double.parseDouble(parts[4].trim()),
+                            parts[5].trim(),
+                            List.of(parts[6].trim().split("\\|"))
+                    );
+                }
+                refreshTable();
+            } catch(Exception e) {
+                JOptionPane.showMessageDialog(this,"Failed to upload file.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    /**
+     * Opens a dialog for updating an existing whale.
+     * <p>
+     * The user enters the whale ID, and if a match is found, a pre-filled form
+     * appears with all current values. The ID itself can’t be changed, but all
+     * other fields can be edited. After validation, the method calls
+     * {@link AppController#updateWhale(String, String, List, double, double, String, List)}
+     * and refreshes the table on success.
+     * </p>
+     */
+    private void updateWhaleDialog() {
+        String idInput = JOptionPane.showInputDialog(this, "Enter Whale ID to update:");
+        if (idInput == null) return; // Cancel pressed
+
+        Whale w = controller.getWhaleById(idInput.trim());
+        if (w == null) {
+            JOptionPane.showMessageDialog(this, "Whale not found!", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        JTextField id = new JTextField(w.getSpeciesId());
+        id.setEditable(false); // Cannot change ID
+        JTextField sci = new JTextField(w.getScientificName());
+        JTextField common = new JTextField(String.join(",", w.getCommonNames()));
+        JTextField len = new JTextField(String.valueOf(w.getAvgLengthMeters()));
+        JTextField wt = new JTextField(String.valueOf(w.getAvgWeightTons()));
+        JComboBox<String> status = new JComboBox<>(new String[]{
+                "Least Concern", "Vulnerable", "Endangered", "Critically Endangered"
+        });
+        status.setSelectedItem(w.getConservationStatus().toString());
+        JTextField habs = new JTextField(String.join(",", w.getHabitatRegions()));
+
+        Object[] message = {
+                "ID (cannot change):", id,
+                "Scientific Name:", sci,
+                "Common Names (comma-separated):", common,
+                "Length in meters (positive number):", len,
+                "Weight in tons (positive number):", wt,
+                "Conservation Status:", status,
+                "Habitats (comma-separated):", habs
+        };
+
+        int option = JOptionPane.showConfirmDialog(this, message, "Update Whale", JOptionPane.OK_CANCEL_OPTION);
+        if(option != JOptionPane.OK_OPTION) return;
+
+        try {
+            // Validation
+            if(!sci.getText().trim().matches("[a-zA-Z ]+"))
+                throw new Exception("Invalid Scientific Name! Letters and spaces only.");
+            String[] commonsArr = common.getText().trim().split(",");
+            for(String n : commonsArr)
+                if(!n.trim().matches("[a-zA-Z ]+"))
+                    throw new Exception("Invalid Common Names! Letters and commas only.");
+            double length = Double.parseDouble(len.getText().trim());
+            if(length <= 0) throw new Exception("Length must be positive!");
+            double weight = Double.parseDouble(wt.getText().trim());
+            if(weight <= 0) throw new Exception("Weight must be positive!");
+            if(habs.getText().trim().isEmpty()) throw new Exception("Habitats cannot be empty!");
+
+            boolean success = controller.updateWhale(
+                    id.getText().trim(),
+                    sci.getText().trim(),
+                    List.of(commonsArr),
+                    length,
+                    weight,
+                    status.getSelectedItem().toString(),
+                    List.of(habs.getText().trim().split(","))
+            );
+
+            if(success) refreshTable();
+            else throw new Exception("Failed to update whale. Check inputs.");
+
+        } catch(Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Opens a simple dialog to remove a whale by ID.
+     * <p>
+     * If the given ID matches an existing whale and the removal through
+     * {@link AppController#removeWhale(String)} succeeds, the table is updated.
+     * Otherwise, a message is shown to the user.
+     * </p>
+     */
+    private void removeWhaleDialog() {
+        String id = JOptionPane.showInputDialog(this, "Enter Whale ID to remove:");
+        if(id == null) return;
+        boolean success = controller.removeWhale(id.trim());
+        if(success) refreshTable();
+        else JOptionPane.showMessageDialog(this,"Whale not found or could not be removed.");
+    }
+
+    /**
+     * Builds and shows a small popup summarizing whales by conservation status.
+     * <p>
+     * For each {@link ConservationStatus}, it lists how many whales are in
+     * that category and prints their scientific names in a simple text block.
+     * </p>
+     */
+    private void showOverview() {
+        StringBuilder sb = new StringBuilder();
+        for(ConservationStatus cs : ConservationStatus.values()) {
+            List<String> species = controller.getAllWhales().stream()
+                    .filter(w -> w.getConservationStatus() == cs)
+                    .map(Whale::getScientificName).toList();
+            sb.append(cs).append(" (").append(species.size()).append("): ").append(String.join(", ", species)).append("\n");
+        }
+        JOptionPane.showMessageDialog(this, sb.toString(), "Conservation Overview", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    /**
+     * Reloads the table with the latest whale data from the controller.
+     * <p>
+     * This clears all rows and then re-adds one row per {@link Whale} currently
+     * returned by {@link AppController#getAllWhales()}.
+     * </p>
+     */
+    private void refreshTable() {
+        tableModel.setRowCount(0);
+        for(Whale w : controller.getAllWhales()) {
+            tableModel.addRow(new Object[]{
+                    w.getSpeciesId(), w.getScientificName(),
+                    String.join(", ", w.getCommonNames()),
+                    w.getAvgLengthMeters(), w.getAvgWeightTons(),
+                    w.getConservationStatus(), String.join(", ", w.getHabitatRegions())
+            });
+        }
+    }
+
+    /**
+     * Standalone entry point for running the GUI directly.
+     * <p>
+     * This method simply launches a new {@link WhaleBaseGUI} on the Swing
+     * event dispatch thread and makes it visible.
+     * </p>
+     *
+     * @param args standard command-line args (not used here)
+     */
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new WhaleBaseGUI().setVisible(true));
+    }
+}
