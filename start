@@ -1,0 +1,43 @@
+/**
+ * Entry point for the Whale Base application.
+ * <p>
+ * This class just kicks things off and launches the GUI. When the program
+ * starts, {@link #main(String[])} is called, and from there we spin up the
+ * {@link WhaleBaseGUI} on the Swing event dispatch thread (EDT).
+ * </p>
+ *
+ * <p><b>Role in the overall system:</b></p>
+ * <ul>
+ *     <li>Acts as the starting point of the app.</li>
+ *     <li>Boots up the graphical user interface instead of a console menu.</li>
+ *     <li>Makes sure the GUI is created in a thread-safe way using Swing’s
+ *         {@code invokeLater}.</li>
+ * </ul>
+ *
+ * <p><b>Typical usage:</b> You don’t normally call this class directly in code.
+ * You just run the program, and the JVM calls {@code main} for you:</p>
+ *
+ * <pre>{@code
+ * // From the command line:
+ * // java Main
+ *
+ * // Or in an IDE, just hit "Run" on Main.
+ * }</pre>
+ */
+public class Main {
+
+    /**
+     * Standard Java entry point. Starts the Whale Base GUI.
+     * <p>
+     * The GUI is created on the Swing event dispatch thread using
+     * {@code SwingUtilities.invokeLater} so that all UI work happens on the
+     * correct thread (which is what Swing expects).
+     * </p>
+     *
+     * @param args command-line arguments (not used in this app, but included
+     *             for the usual Java {@code main} method signature)
+     */
+    public static void main(String[] args) {
+        javax.swing.SwingUtilities.invokeLater(() -> new WhaleBaseGUI().setVisible(true));
+    }
+}
